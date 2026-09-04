@@ -18,6 +18,12 @@ DECLARE @MINUS1Q AS VARCHAR(7) = CONCAT(
     '_Q',
     DATEPART(QUARTER, DATEADD(QUARTER, -4, GETDATE()))
 ),
+/* To run this query for a specific month, change the GETDATE() in the following 5 lines to the first day 
+ of the month you want to run the query for. You will also need to change the GETDATE() in the variables
+ in the national_perspective.sql file, although there is a chance you need to copy those values into the
+ slide manually because there may be more approvals or more eligible submissions than when you last ran 
+ the script. NOTHING ELSE NEEDS TO BE CHANGED IN ANY OF THE OTHER QUERIES,
+ UNLESS YOU ARE RUNNING FOR A DIFFERENT QUARTER THAN THE ONE YOU ARE CURRENTLY IN. */
 @MONTH_MINUS_12 AS VARCHAR(7) = FORMAT(DATEADD(MONTH, -12, GETDATE()), 'yyyy_MM'),
 @MONTH_MINUS_1 AS VARCHAR(7) = FORMAT(DATEADD(MONTH, -1, GETDATE()), 'yyyy_MM'),
 @MONTH_MINUS_24 AS VARCHAR(7) = FORMAT(DATEADD(MONTH, -24, GETDATE()), 'yyyy_MM'),
@@ -339,11 +345,17 @@ CPAS AS (
 )
 SELECT
     IMPL.*,
-    CAST(
-        CAST(R12_INPATIENT_IMPL AS DECIMAL(10, 2)) / NULLIF(R12_INPATIENT_IMPL + R12_OUTPATIENT_IMPL, 0) AS DECIMAL(10, 2)
+    ISNULL(
+        CAST(
+            CAST(R12_INPATIENT_IMPL AS DECIMAL(10, 2)) / NULLIF(R12_INPATIENT_IMPL + R12_OUTPATIENT_IMPL, 0) AS DECIMAL(10, 2)
+        ),
+        0
     ) AS R12_IP_MIX,
-    CAST(
-        CAST(R12_OUTPATIENT_IMPL AS DECIMAL(10, 2)) / NULLIF(R12_INPATIENT_IMPL + R12_OUTPATIENT_IMPL, 0) AS DECIMAL(10, 2)
+    ISNULL(
+        CAST(
+            CAST(R12_OUTPATIENT_IMPL AS DECIMAL(10, 2)) / NULLIF(R12_INPATIENT_IMPL + R12_OUTPATIENT_IMPL, 0) AS DECIMAL(10, 2)
+        ),
+        0
     ) AS R12_OP_MIX,
     isnull(
         CAST(
