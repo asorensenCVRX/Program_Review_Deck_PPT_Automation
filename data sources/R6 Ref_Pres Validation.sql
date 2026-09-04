@@ -1,0 +1,118 @@
+DECLARE @MINUS1Q AS VARCHAR(7) = CONCAT(
+    YEAR(DATEADD(QUARTER, -1, GETDATE())),
+    '_Q',
+    DATEPART(QUARTER, DATEADD(QUARTER, -1, GETDATE()))
+),
+@MINUS2Q AS VARCHAR(7) = CONCAT(
+    YEAR(DATEADD(QUARTER, -2, GETDATE())),
+    '_Q',
+    DATEPART(QUARTER, DATEADD(QUARTER, -2, GETDATE()))
+),
+@MINUS3Q AS VARCHAR(7) = CONCAT(
+    YEAR(DATEADD(QUARTER, -3, GETDATE())),
+    '_Q',
+    DATEPART(QUARTER, DATEADD(QUARTER, -3, GETDATE()))
+),
+@MINUS4Q AS VARCHAR(7) = CONCAT(
+    YEAR(DATEADD(QUARTER, -4, GETDATE())),
+    '_Q',
+    DATEPART(QUARTER, DATEADD(QUARTER, -4, GETDATE()))
+),
+@MONTH_MINUS_12 AS VARCHAR(7) = FORMAT(DATEADD(MONTH, -12, GETDATE()), 'yyyy_MM'),
+@MONTH_MINUS_1 AS VARCHAR(7) = FORMAT(DATEADD(MONTH, -1, GETDATE()), 'yyyy_MM'),
+@MONTH_MINUS_24 AS VARCHAR(7) = FORMAT(DATEADD(MONTH, -24, GETDATE()), 'yyyy_MM'),
+@MONTH_MINUS_13 AS VARCHAR(7) = FORMAT(DATEADD(MONTH, -13, GETDATE()), 'yyyy_MM'),
+@MONTH_MINUS_6 AS VARCHAR(7) = FORMAT(DATEADD(MONTH, -6, GETDATE()), 'yyyy_MM');
+
+WITH OPPS AS (
+    SELECT
+        O.CREATEDDATE,
+        O.CREATED_YYYYMM,
+        O.CREATED_YYYYQQ,
+        O.CLOSEDATE,
+        O.CLOSE_YYYYMM,
+        O.CLOSE_YYYYQQ,
+        O.IMPLANTED_DT,
+        O.IMPLANTED_YYYYMM,
+        O.IMPLANTED_YYYYQQ,
+        DATEDIFF(DAY, O.CREATEDDATE, O.IMPLANTED_DT) AS TIME_TO_IMPL,
+        A.NAME AS ACCOUNT_NAME,
+        ACT_ID,
+        O.NAME AS OPP_NAME,
+        OPP_ID,
+        IMPLANT_UNITS,
+        REVENUE_UNITS,
+        SALES,
+        REASON_FOR_IMPLANT__C,
+        INDICATION_FOR_USE__C,
+        O.OPP_STATUS,
+        O.PHYSICIAN_ID,
+        O.PRESCRIBER_ID,
+        O.SURGEON_ID,
+        O.ISIMPL,
+        O.PROCEDURE_CODING__C,
+        PRESCRIBER,
+        SURGEON,
+        PHYSICIAN
+    FROM
+        tmpOpps O
+        LEFT JOIN sfdcAccount A ON O.ACT_ID = A.ID
+    WHERE
+        REASON_FOR_IMPLANT__C = 'De novo'
+        AND INDICATION_FOR_USE__C = 'Heart Failure - Reduced Ejection Fraction'
+)
+SELECT
+    TOP 1 WITH TIES PHYSICIAN,
+    OPP_NAME,
+    CREATEDDATE
+FROM
+    (
+        SELECT
+            ACT_ID,
+            PHYSICIAN_ID,
+            PHYSICIAN,
+            OPP_NAME,
+            CREATEDDATE,
+            CREATED_YYYYMM,
+            CREATED_YYYYQQ,
+            IMPLANTED_DT,
+            IMPLANTED_YYYYMM,
+            IMPLANTED_YYYYQQ,
+            OPP_STATUS,
+            ISIMPL,
+            'REFERRER' AS [TYPE]
+        FROM
+            Opps A
+        WHERE
+            A.PHYSICIAN_ID IS NOT NULL
+        UNION
+        ALL
+        SELECT
+            ACT_ID,
+            PRESCRIBER_ID,
+            PRESCRIBER,
+            OPP_NAME,
+            CREATEDDATE,
+            CREATED_YYYYMM,
+            CREATED_YYYYQQ,
+            IMPLANTED_DT,
+            IMPLANTED_YYYYMM,
+            IMPLANTED_YYYYQQ,
+            OPP_STATUS,
+            ISIMPL,
+            'PRESCRIBER'
+        FROM
+            Opps A
+        WHERE
+            A.PRESCRIBER_ID IS NOT NULL
+    ) AS A
+WHERE
+    ACT_ID = '0017000001LsiQyAAJ'
+    AND CREATED_YYYYMM BETWEEN '2026_01'
+    AND '2026_06'
+ORDER BY
+    ROW_NUMBER() OVER (
+        PARTITION BY PHYSICIAN_ID
+        ORDER BY
+            CREATEDDATE DESC
+    )
