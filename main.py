@@ -9,7 +9,7 @@ import time
 
 # get data from the PowerPoint
 ppt_path = r"C:\Users\asorensen\OneDrive - CVRx Inc\Projects\2026\20260623_Program_review_deck_automation_LJackson\TEMPLATE DECK.pptx"
-out_path = Path(r"C:\Users\asorensen\OneDrive - CVRx Inc\Projects\2026\20260623_Program_review_deck_automation_LJackson\Q3 Review")
+out_path = Path(r"C:\Users\asorensen\OneDrive - CVRx Inc\Projects\2026\20260623_Program_review_deck_automation_LJackson\Q4 Review")
 out_path.mkdir(parents=True, exist_ok=True)
 
 # get previous 4 quarters to use as category names in the slides
@@ -30,6 +30,7 @@ for i in range(1, 5):
 quarters.reverse()
 
 for index, row in df.iterrows():
+    print(f"Creating deck for {row['ACCOUNT_NAME']}...", end="", flush=True)
     prs = Presentation(ppt_path)
 
     #################################### SLIDE 1 ##########################################
@@ -118,12 +119,6 @@ for index, row in df.iterrows():
         ["MedicareAdv_SubType", "R4Q_DAY_30_APPROVAL", "-1Q_DAY_30_APPROVAL", "-1Q_ELIGIBLE_SUBMISSIONS",
          "R4Q_ELIGIBLE_SUBMISSIONS"]
     ]
-    # new_row = pd.DataFrame(
-    #     [["Trad. Medicare"] + [None] * (len(patient_access.columns) - 1)],
-    #     columns=patient_access.columns
-    # )
-    #
-    # patient_access = pd.concat([new_row, patient_access], ignore_index=True)
     # convert nan values to None
     patient_access = patient_access.astype(object).where(patient_access.notna(), None)
     # CONTINUES THE CHART UPDATE AT THE END OF THE LOOP
@@ -187,7 +182,7 @@ for index, row in df.iterrows():
                               "[B]": str(slide_11_df["R6_REF_PRES"][0]),
                               "[C]": str(row["R6_PATIENTS_IN_FUNNEL"]),
                               "[D]": str(slide_11_df["R6_OPPS_CREATED"][0]),
-                              "[E]": str(row["R6_AVG_TIME_TO_IMPL"]),
+                              "[E]": "N/A" if pd.isna(row["R6_AVG_TIME_TO_IMPL"]) else str(int(row["R6_AVG_TIME_TO_IMPL"])),
                               "[F]": str(slide_11_df["R6_AVG_TIME_TO_IMPL"][0]),
                               "[G]": str(row["R6_IMPLANTS"]),
                               "[H]": str(slide_11_df["R6_IMPL_VOL"][0])
@@ -215,5 +210,7 @@ for index, row in df.iterrows():
                        slide_number=7,
                        shape_number=7,
                        cell_values=cell_updates)
+
+    print("done")
 
 
