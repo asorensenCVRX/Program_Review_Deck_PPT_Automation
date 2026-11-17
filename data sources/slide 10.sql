@@ -182,6 +182,7 @@ Z AS (
         [PHYSICIAN]
 ),
 Z2 AS (
+    /*Only pull in referrers and prescribers that have had an implant in the past 12 months */
     SELECT
         *,
         'REF/PRES' AS DATASET
@@ -193,14 +194,16 @@ Z2 AS (
                     PARTITION BY ACT_ID
                     ORDER BY
                         [-1Q_PATS_IMPL] DESC,
-                        TTL_IMPL DESC
+                        TTL_IMPL DESC,
+                        LAST_4_Q_IMPLANTS DESC
                 ) AS RN
             FROM
                 Z
+            WHERE
+                LAST_4_Q_IMPLANTS > 0
         ) AS A
     WHERE
         RN <= 8
-        AND LAST_4_Q_IMPLANTS > 0
     UNION
     ALL
     SELECT
@@ -227,10 +230,11 @@ Z2 AS (
                 ) AS RN
             FROM
                 SURG
+            WHERE
+                LAST_4_Q_IMPLANTS > 0
         ) AS B
     WHERE
         RN <= 2
-        AND LAST_4_Q_IMPLANTS > 0
 )
 SELECT
     ACT_ID,
